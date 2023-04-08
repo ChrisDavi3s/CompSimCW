@@ -7,14 +7,14 @@ import matplotlib.pyplot as plt
 lib = ctypes.CDLL('./ising_simulation_arm64.so')
 
 # Define the running parameters
-lattice_sizes = [6,8,10,14,18,25]
+lattice_sizes = [6,30]
 
 tempSteps = 100
 minimumTemperature = 0
 maximumTemperature = 5
-mcSweeps = 400000
-mcAdjustmentSweeps = 80000
-magnetisation = 0
+mcSweeps = 300000
+mcAdjustmentSweeps = 200000
+etxField = 0
 
 t_critical = 2.269  # Critical temperature for the 2D Ising model
 
@@ -49,7 +49,7 @@ def plot_data(ax, x, y, ylabel, label):
 for size in lattice_sizes:
 
 
-    heatCapacities, magnetisations, susceptibilities = run_simulation(size, mcSweeps, mcAdjustmentSweeps, magnetisation, temperatures)
+    heatCapacities, magnetisations, susceptibilities = run_simulation(size, mcSweeps, mcAdjustmentSweeps, etxField, temperatures)
 
     print(f'Finished simulation for L={size}')
 
@@ -66,8 +66,11 @@ ax1.legend()
 ax2.legend()
 ax3.legend()
 
+#name of the file
+name = 'ising_model_B' + str(etxField) + '.png'
+
 # Adjust the layout and display the plots
 plt.tight_layout()
 plt.subplots_adjust(top=0.92)
-plt.savefig('ising_model_b0_new.png')
+plt.savefig(name)
 plt.show()
