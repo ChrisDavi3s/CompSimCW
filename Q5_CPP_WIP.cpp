@@ -35,6 +35,7 @@ SpinArray InitializeSpinArray(int systemSize) {
     for (int i = 0; i < systemSize; ++i) {
         for (int j = 0; j < systemSize; ++j) {
             //spinArray[i][j] = dis(gen) * 2 - 1;
+            //cold start
             spinArray[i][j] = -1;
         }
     }

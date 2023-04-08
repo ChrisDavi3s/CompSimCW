@@ -2,3 +2,6 @@ build
 .vscode
 .ipynb_checkpoints
 CMakeLists.txt
+EST(2)
+potentials_and_eigenfunctions.png
+Q2.py
