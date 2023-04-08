@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 lib = ctypes.CDLL('./ising_simulation_arm64.so')
 
 # Define the running parameters
-lattice_sizes = [6,30]
+lattice_sizes = [10]
 
 tempSteps = 100
 minimumTemperature = 0
@@ -40,15 +40,16 @@ def run_simulation(systemSize, mcSweeps, mcAdjustmentSweeps, externalField, temp
 fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(5, 8), sharex=True)
 fig.suptitle('Physical Quantities for Ising Model (B=0)', fontsize=14)
 
-def plot_data(ax, x, y, ylabel, label):
+def plot_data(ax, x, y, ylabel, label, bottom=False):
     #no line between points
-    ax.plot(x, y, label=label, linestyle = 'None', marker='x', markersize=1)
-    ax.set_xlabel('Temperature')
+    ax.plot(x, y, label=label, linestyle='None', marker='x', markersize=1)
+    if bottom:
+        ax.set_xlabel('Temperature')
     ax.set_ylabel(ylabel)
+    ax.tick_params(axis='x', which='both', bottom=True, labelbottom=True)
+
 
 for size in lattice_sizes:
-
-
     heatCapacities, magnetisations, susceptibilities = run_simulation(size, mcSweeps, mcAdjustmentSweeps, etxField, temperatures)
 
     print(f'Finished simulation for L={size}')
@@ -59,7 +60,7 @@ for size in lattice_sizes:
     # Add the data for the current lattice size to the plots
     plot_data(ax1, temperatures, heatCapacities, 'Heat Capacity', f'L={size}')
     plot_data(ax2, temperatures, magnetisations, 'Magnetisation', f'L={size}')
-    plot_data(ax3, temperatures, susceptibilities, 'Susceptibility', f'L={size}')
+    plot_data(ax3, temperatures, susceptibilities, 'Susceptibility', f'L={size}', bottom = True)
 
 # Add legends to the plots
 ax1.legend()
