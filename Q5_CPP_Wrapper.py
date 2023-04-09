@@ -2,15 +2,15 @@ import numpy as np
 import ctypes
 import matplotlib.pyplot as plt
 from scipy.signal import argrelextrema
-import scipy.ndimage.filters as filters
+import scipy.ndimage as filters
 
 # Constants
-LATTICE_SIZES = [40]
-TEMP_STEPS = 200
+LATTICE_SIZES = [5,10,20,50,100]
+TEMP_STEPS = 400
 MINIMUM_TEMPERATURE = 0
 MAXIMUM_TEMPERATURE = 5
-MC_SWEEPS = 100000
-MC_ADJUSTMENT_SWEEPS = 10000
+MC_SWEEPS = 400000
+MC_ADJUSTMENT_SWEEPS = 20000
 EXTERNAL_FIELD = 0
 
 # Class to run the C++ simulation
@@ -39,7 +39,7 @@ class IsingSimulation:
         return heatCapacities, magnetisations, susceptibilities
     
     def plot_data(self, ax, x, y, ylabel, label, bottom=False):
-        ax.plot(x, y, label=label, linestyle='None', marker='x', markersize=0.5)
+        ax.plot(x, y, label=label, linestyle='None', marker='.', markersize=1.5)
         if bottom:
             ax.set_xlabel('Temperature')
         ax.set_ylabel(ylabel)
@@ -72,7 +72,7 @@ class IsingSimulation:
 
         plt.tight_layout()
         plt.subplots_adjust(top=0.92)
-        plt.savefig(name)
+        plt.savefig(name, dpi=300)
         plt.close()
 
     def estimate_critical_temperature(self, magnetisations):
@@ -86,7 +86,7 @@ class IsingSimulation:
         estimated_critical_temp = self.temperatures[inflection_point_index]
 
         fig, ax = plt.subplots(figsize=(5, 4))
-        ax.plot(self.temperatures, magnetisations, marker='x', markersize=0.5, linestyle='None', label=f'L={LATTICE_SIZES[-1]}')
+        ax.plot(self.temperatures, magnetisations, marker='x', markersize=1, linestyle='None', label=f'L={LATTICE_SIZES[-1]}')
         ax.plot(estimated_critical_temp, magnetisations[inflection_point_index], 'ro', label=f'Estimated Tc: {estimated_critical_temp:.3f}')
 
         ax.set_xlabel('Temperature')
@@ -96,7 +96,7 @@ class IsingSimulation:
         ax.set_title(f'Critical Temperature Estimation (L={LATTICE_SIZES[-1]}, B={EXTERNAL_FIELD})')
 
         filename = f'critical_temperature_estimation_L{LATTICE_SIZES[-1]}_B{EXTERNAL_FIELD}.png'
-        plt.savefig(filename)
+        plt.savefig(filename, dpi=300)
         plt.close()
 
         return estimated_critical_temp
