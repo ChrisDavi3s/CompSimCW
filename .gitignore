@@ -5,3 +5,13 @@ CMakeLists.txt
 EST(2)
 potentials_and_eigenfunctions.png
 Q2.py
+Q5_CPP_WIP.cpp
+simulation_long.png
+simulation_short.png
+Q5_CPP_Wrapper.py
+.gitignore
+critical_temperature_estimation_L20_B0.png
+critical_temperature_estimation_L15_B0.png
+critical_temperature_estimation_L40_B0.png
+ising_model_B0.png
+ising_model_B0.png

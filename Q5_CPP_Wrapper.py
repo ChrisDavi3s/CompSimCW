@@ -1,77 +1,115 @@
 import numpy as np
 import ctypes
 import matplotlib.pyplot as plt
+from scipy.signal import argrelextrema
+import scipy.ndimage.filters as filters
 
-# Load the shared library
-# Had to reinstall python to move from rosetta to arm64 to get this to work
-lib = ctypes.CDLL('./ising_simulation_arm64.so')
+# Constants
+LATTICE_SIZES = [40]
+TEMP_STEPS = 200
+MINIMUM_TEMPERATURE = 0
+MAXIMUM_TEMPERATURE = 5
+MC_SWEEPS = 100000
+MC_ADJUSTMENT_SWEEPS = 10000
+EXTERNAL_FIELD = 0
 
-# Define the running parameters
-lattice_sizes = [10]
+# Class to run the C++ simulation
+class IsingSimulation:
+    def __init__(self):
+        self.lib = ctypes.CDLL('./ising_simulation_arm64.so')
+        self.t_critical = 2.269  # Critical temperature for the 2D Ising model
+        self.temperatures = np.linspace(
+            MINIMUM_TEMPERATURE, MAXIMUM_TEMPERATURE, TEMP_STEPS)
 
-tempSteps = 100
-minimumTemperature = 0
-maximumTemperature = 5
-mcSweeps = 300000
-mcAdjustmentSweeps = 200000
-etxField = 0
+    def run_simulation(self, systemSize, mcSweeps, mcAdjustmentSweeps, externalField, temperatures):
+        tempSampleSize = len(temperatures)
+        heatCapacities = np.empty(tempSampleSize, dtype=np.double)
+        magnetisations = np.empty(tempSampleSize, dtype=np.double)
+        susceptibilities = np.empty(tempSampleSize, dtype=np.double)
 
-t_critical = 2.269  # Critical temperature for the 2D Ising model
+        self.lib.run_simulation(ctypes.c_int32(systemSize), ctypes.c_int32(mcSweeps), ctypes.c_int32(mcAdjustmentSweeps),
+                                 ctypes.c_int32(externalField), ctypes.c_int32(
+                                     tempSampleSize), temperatures.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
+                                 heatCapacities.ctypes.data_as(
+                                     ctypes.POINTER(ctypes.c_double)),
+                                 magnetisations.ctypes.data_as(
+                                     ctypes.POINTER(ctypes.c_double)),
+                                 susceptibilities.ctypes.data_as(ctypes.POINTER(ctypes.c_double)))
 
-temperatures = np.linspace(minimumTemperature, maximumTemperature, tempSteps)
-
-def run_simulation(systemSize, mcSweeps, mcAdjustmentSweeps, externalField, temperatures):
-    tempSampleSize = len(temperatures)
-    heatCapacities = np.empty(tempSampleSize, dtype=np.double)
-    magnetisations = np.empty(tempSampleSize, dtype=np.double)
-    susceptibilities = np.empty(tempSampleSize, dtype=np.double)
+        return heatCapacities, magnetisations, susceptibilities
     
-    # Call the run_simulation function from the shared library
-    lib.run_simulation(ctypes.c_int32(systemSize), ctypes.c_int32(mcSweeps), ctypes.c_int32(mcAdjustmentSweeps),
-                       ctypes.c_int32(externalField), ctypes.c_int32(tempSampleSize), temperatures.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
-                       heatCapacities.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
-                       magnetisations.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
-                       susceptibilities.ctypes.data_as(ctypes.POINTER(ctypes.c_double)))
-    
-    return heatCapacities, magnetisations, susceptibilities
+    def plot_data(self, ax, x, y, ylabel, label, bottom=False):
+        ax.plot(x, y, label=label, linestyle='None', marker='x', markersize=0.5)
+        if bottom:
+            ax.set_xlabel('Temperature')
+        ax.set_ylabel(ylabel)
+        ax.tick_params(axis='x', which='both', bottom=True, labelbottom=True)
 
-# Call the run_simulation function with different lattice sizes and plot the results
+    def run_ising_simulations(self):
+        results = []
+        for size in LATTICE_SIZES:
+            heatCapacities, magnetisations, susceptibilities = self.run_simulation(
+                size, MC_SWEEPS, MC_ADJUSTMENT_SWEEPS, EXTERNAL_FIELD, self.temperatures)
+            results.append((heatCapacities, magnetisations, susceptibilities))
+        return results
 
-fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(5, 8), sharex=True)
-fig.suptitle('Physical Quantities for Ising Model (B=0)', fontsize=14)
+    def create_property_plots(self, results):
+        fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(5, 8), sharex=True)
+        fig.suptitle(f'Physical Quantities for Ising Model (B={EXTERNAL_FIELD})', fontsize=14)
 
-def plot_data(ax, x, y, ylabel, label, bottom=False):
-    #no line between points
-    ax.plot(x, y, label=label, linestyle='None', marker='x', markersize=1)
-    if bottom:
+        for size, (heatCapacities, magnetisations, susceptibilities) in zip(LATTICE_SIZES, results):
+            print(f'Finished simulation for L={size}')
+
+            self.plot_data(ax1, self.temperatures, heatCapacities, 'Heat Capacity', f'L={size}')
+            self.plot_data(ax2, self.temperatures, magnetisations, 'Magnetisation', f'L={size}')
+            self.plot_data(ax3, self.temperatures, susceptibilities, 'Susceptibility', f'L={size}', bottom=True)
+
+        ax1.legend()
+        ax2.legend()
+        ax3.legend()
+
+        name = 'ising_model_B' + str(EXTERNAL_FIELD) + '.png'
+
+        plt.tight_layout()
+        plt.subplots_adjust(top=0.92)
+        plt.savefig(name)
+        plt.close()
+
+    def estimate_critical_temperature(self, magnetisations):
+        # Estimate the critical temperature by finding the inflection point of the magnetisation curve
+        # Smooth the magnetisation curve to reduce noise
+        smoothed_magnetisations = filters.gaussian_filter1d(magnetisations, sigma=2)
+        #Find the second derivative of the magnetisation curve
+        second_derivative = np.gradient(np.gradient(smoothed_magnetisations, self.temperatures), self.temperatures)
+        #Find the index of the inflection point
+        inflection_point_index = np.argmax(np.abs(second_derivative))
+        estimated_critical_temp = self.temperatures[inflection_point_index]
+
+        fig, ax = plt.subplots(figsize=(5, 4))
+        ax.plot(self.temperatures, magnetisations, marker='x', markersize=0.5, linestyle='None', label=f'L={LATTICE_SIZES[-1]}')
+        ax.plot(estimated_critical_temp, magnetisations[inflection_point_index], 'ro', label=f'Estimated Tc: {estimated_critical_temp:.3f}')
+
         ax.set_xlabel('Temperature')
-    ax.set_ylabel(ylabel)
-    ax.tick_params(axis='x', which='both', bottom=True, labelbottom=True)
+        ax.set_ylabel('Magnetisation')
+        ax.tick_params(axis='x', which='both', bottom=True, labelbottom=True)
+        ax.legend()
+        ax.set_title(f'Critical Temperature Estimation (L={LATTICE_SIZES[-1]}, B={EXTERNAL_FIELD})')
+
+        filename = f'critical_temperature_estimation_L{LATTICE_SIZES[-1]}_B{EXTERNAL_FIELD}.png'
+        plt.savefig(filename)
+        plt.close()
+
+        return estimated_critical_temp
 
 
-for size in lattice_sizes:
-    heatCapacities, magnetisations, susceptibilities = run_simulation(size, mcSweeps, mcAdjustmentSweeps, etxField, temperatures)
+    def estimate_critical_temperature_for_largest_lattice(self, results):
+        magnetisations_for_largest_size = results[-1][1]
+        estimated_critical_temp = self.estimate_critical_temperature(magnetisations_for_largest_size)
+        print(f'Estimated critical temperature: {estimated_critical_temp:.3f}')
+        return estimated_critical_temp
 
-    print(f'Finished simulation for L={size}')
-
-    # Get the temperatures from the minTemperature, maxTemperature, and tempSampleSize
-    #temperatures = np.linspace(1.0, 4.0, tempSteps)
-
-    # Add the data for the current lattice size to the plots
-    plot_data(ax1, temperatures, heatCapacities, 'Heat Capacity', f'L={size}')
-    plot_data(ax2, temperatures, magnetisations, 'Magnetisation', f'L={size}')
-    plot_data(ax3, temperatures, susceptibilities, 'Susceptibility', f'L={size}', bottom = True)
-
-# Add legends to the plots
-ax1.legend()
-ax2.legend()
-ax3.legend()
-
-#name of the file
-name = 'ising_model_B' + str(etxField) + '.png'
-
-# Adjust the layout and display the plots
-plt.tight_layout()
-plt.subplots_adjust(top=0.92)
-plt.savefig(name)
-plt.show()
+if __name__ == '__main__':
+    sim = IsingSimulation()
+    simulation_results = sim.run_ising_simulations()
+    sim.create_property_plots(simulation_results)
+    sim.estimate_critical_temperature_for_largest_lattice(simulation_results)

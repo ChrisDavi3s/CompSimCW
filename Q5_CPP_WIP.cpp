@@ -84,7 +84,7 @@ double Magnetisation(const SpinArray& spinArray, int systemSize) {
     return abs(magnetisation) / (systemSize * systemSize);
 }
 
-double AverageMagnetisation(const vector<double>& magnetisations) {
+double AverageAbsMagnetisation(const vector<double>& magnetisations) {
     double sum = 0.0;
     for (double value : magnetisations) {
         sum += value;
@@ -163,7 +163,7 @@ void CalculatePhysicalQuantities(int systemSize, int mcSweeps, int mcAdjustmentS
 
        // printNumberOfSpins(spinArray, systemSize);
 
-        double averageMagPerSpin = AverageMagnetisation(magnetizationPerSpinList);
+        double averageMagPerSpin = AverageAbsMagnetisation(magnetizationPerSpinList);
         double heatCapacity = HeatCapacity(energyPerSpinList, temperature);
         double susceptibility = MagneticSusceptibility(magnetizationPerSpinList, averageMagPerSpin, temperature);
 
