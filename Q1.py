@@ -1,16 +1,18 @@
 #Import necessary libraries (numpy, matplotlib, and scipy's curve_fit).
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.optimize import curve_fit
 
 # Constants and initial conditions
 m = 1.0
 k = 1.0
 omega = np.sqrt(k/m)
 tmax = 10.0
+# Time step sizes
+biggest_timestep = 1.0
+smaller_timestep = 0.000001
 
-x0 = 10
-v0 = 0
+x0 = 0
+v0 = 1
 
 def calculate_points(dt):
     """
@@ -35,10 +37,9 @@ def calculate_energy_conservation(x, v):
     delta_e = 1/len(x) * np.sum(abs((0.5*m*v**2 + 0.5*k*x**2 - e_0)/e_0))
     return delta_e
 
-# Time step sizes
-biggest_timestep = 1.0
-smaller_timestep = 0.000001
+
 dt_list = np.logspace(np.log10(smaller_timestep), np.log10(biggest_timestep), 10)
+#dt_list = np.linspace(smaller_timestep, biggest_timestep, 20)
 delta_e_list = []
 
 # Iterate over time step sizes, calculate positions and velocities, compute energy conservation error, and append to delta_e_list
@@ -70,12 +71,22 @@ def power_law(x, a, b):
     """
     return a * x**b
 
-# Fit power-law model to data
-params, _ = curve_fit(power_law, dt_list, delta_e_list)
+# Log-transform the data points
+log_dt_list = np.log10(dt_list)
+log_delta_e_list = np.log10(delta_e_list)
+
+# Perform linear regression on the logged data
+coeffs = np.polyfit(log_dt_list, log_delta_e_list, deg=1)
+a_log = coeffs[1]
+b_log = coeffs[0]
+
+# Convert the coefficients back to the original scale
+a = 10 ** a_log
+b = b_log
 
 # Create log-log plot
 plt.loglog(dt_list, delta_e_list, 'x', label='Data')
-plt.loglog(dt_list, power_law(dt_list, *params), label=f'Fit: $y = {params[0]:.4f}x^{{{params[1]:.4f}}}$')
+plt.loglog(dt_list, power_law(dt_list, a, b), label=f'Fit: $y = {a:.4f}x^{{{b:.4f}}}$')
 plt.xlabel('Time step size / s')
 plt.ylabel('Delta E / J')
 plt.gca().invert_xaxis()
