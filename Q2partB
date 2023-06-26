@@ -1,49 +1,62 @@
 import numpy as np
 
+# Constants for the simulation
+CURRENT_STATE = 0.3
+DELTA = 5
+ITERATIONS = 500000
+
 def target_distribution(x):
+    # Define the target distribution: uniform in the range [0, 1], zero elsewhere
     if 0 <= x <= 1:
         return 1
     else:
         return 0
 
-def monte_carlo_b(iterations, delta):
-    current_state = 0.3
-    total_sum = 0
+def monte_carlo_b(iterations, delta, starting_state):
+    current_state = starting_state  # initialize the current state
+    total_sum = 0  # sum of all state values
+    accepted_moves = 0  # number of accepted moves
 
+    # Iterate for the required number of iterations
     for _ in range(iterations):
-        acceptance_ratio = 0
+        acceptance_ratio = 0  # initialize the acceptance ratio for each iteration
 
+        # Generate a random number phi in the range [1, 1 + delta]
         phi = np.random.uniform(1, 1 + delta)
+
+        # With a 50% chance, invert phi and scale the current state by phi
         if np.random.uniform(0, 1) < 0.5:
             proposed_state = current_state * phi
         else:
             phi = 1/phi
             proposed_state = current_state * phi
 
-        if(proposed_state > current_state):
-            acceptance_ratio = 1
-        else:
-            acceptance_ratio = min(1, phi)
+        # Update the acceptance ratio
+        acceptance_ratio = min(1, phi)
 
+        # If the proposed state is not in the valid range, set the acceptance ratio to 0
         if target_distribution(proposed_state) == 0:
             acceptance_ratio = 0
 
+        # If a random number in [0, 1] is less than or equal to the acceptance ratio, accept the move
         if np.random.uniform(0, 1) <= acceptance_ratio:
             current_state = proposed_state
-        
+            accepted_moves += 1
+
+        # Regardless of whether the move is accepted, add the current state value to the total sum
         total_sum += current_state
 
-        if current_state > 1:
-            print("current_state > 1")
-
+    # Calculate the average value of the state over the course of the simulation
     average_value = total_sum / iterations
 
-    return average_value
+    # Calculate the acceptance rate
+    acceptance_rate = accepted_moves / iterations
 
-# Example usage
-iterations = 5000000
-delta = 0.02
-average_value = monte_carlo_b(iterations, delta)
+    return average_value, acceptance_rate
 
+# Run the Monte Carlo simulation
+average_value, acceptance_rate = monte_carlo_b(iterations=ITERATIONS, delta=DELTA, starting_state=CURRENT_STATE)
+
+# Print the results
 print("Average value in the range [0, 1]:", average_value)
-
+print("Acceptance rate:", acceptance_rate)

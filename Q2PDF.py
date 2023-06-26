@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from scipy.stats import gaussian_kde
 
 # Number of samples
-n_samples = 10000
+n_samples = 100000
 
 # Define delta values
 deltas = [1, 3, 5, 10,20]
@@ -49,8 +49,7 @@ for delta in deltas:
     #plt.hist(x_prime_accepted, bins=100, alpha=0.5, label='Delta = {}'.format(delta), density=True)
 
 # Add legend, labels and title to the plot
-plt.xlabel('x\'')
+plt.xlabel('x')
 plt.ylabel('Probability Density (using KDE)')
-plt.title('PDE')
 plt.legend()
 plt.show()

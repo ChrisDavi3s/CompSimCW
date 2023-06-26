@@ -1,38 +1,50 @@
 import numpy as np
 
+# Constants for the simulation
+CURRENT_STATE = 0.2
+DELTA = 0.9
+ITERATIONS = 1000000
+
 def target_distribution(x):
+    # Define the target distribution: uniform in the range [0, 1], zero elsewhere
     if 0 <= x <= 1:
         return 1
     else:
         return 0
 
-def monte_carlo_a(iterations, delta):
-    current_state = 0.1
-    accepted_moves = 0
-    total_sum = 0
+def monte_carlo_a(iterations, delta, starting_state):
+    current_state = starting_state  # initialize the current state
+    accepted_moves = 0  # counter for accepted moves
+    total_sum = 0  # sum of all state values
 
+    # Iterate for the required number of iterations
     for _ in range(iterations):
-        displacement = np.random.uniform(-delta, delta)
-        proposed_state = current_state + displacement
+        displacement = np.random.uniform(-delta, delta)  # generate a random displacement
+        proposed_state = current_state + displacement  # apply the displacement to create a proposed state
 
-        acceptance_ratio = min(1, target_distribution(proposed_state) / target_distribution(current_state))
+        # Check if proposed state is within valid range
+        if 0 <= proposed_state <= 1:
+            # Calculate the acceptance ratio
+            acceptance_ratio = min(1, target_distribution(proposed_state) / target_distribution(current_state))
 
-        if np.random.rand() < acceptance_ratio:
-            current_state = proposed_state
-            accepted_moves += 1
+            # If the acceptance ratio is larger than a random number between 0 and 1, accept the move
+            if np.random.rand() < acceptance_ratio:
+                current_state = proposed_state
+                accepted_moves += 1
 
-        if 0 <= current_state <= 1:
-            total_sum += current_state
+        # Regardless of whether the move is accepted, add the current state value to the total sum
+        total_sum += current_state
 
-    average_value = total_sum / accepted_moves
+    # Calculate the average value of the state over the course of the simulation
+    average_value = total_sum / iterations
+    # Calculate the proportion of proposed moves that were accepted
     acceptance_rate = accepted_moves / iterations
 
     return average_value, acceptance_rate
 
-# Example usage
-iterations = 1000000
-delta = 1
-average_value, acceptance_rate = monte_carlo_a(iterations, delta)
+# Run the Monte Carlo simulation
+average_value, acceptance_rate = monte_carlo_a(iterations=ITERATIONS, delta=DELTA, starting_state=CURRENT_STATE)
 
+# Print the results
 print("Average value in the range [0, 1]:", average_value)
 print("Acceptance rate:", acceptance_rate)
