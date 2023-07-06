@@ -16,17 +16,20 @@ MC_ADJUSTMENT_SWEEPS = 25000
 NUMBER_OF_REPEATS = 100 # Number of times to repeat the simulation for each lattice size (1 for no averaging)
 EXTERNAL_FIELD = 0
 
+# Flag to run Ising simulation
 RUN_ISING_SIMULATIONS = False
 
-PLOT_CRITICAL_TEMPERATURES = False
-USE_GPR = True
-PLOT_CRITICAL_TEMPERATURES_FOR_LATTICE_SIZES = [5]
-
+#Flags to plot the physical properties for systems
 PLOT_PHYSCIAL_PROPERTIES = True
 PLOT_PHYSCIAL_PROPERTIES_FOR_LATTICE_SIZES = [25]
 PLOT_PHYSICAL_PROPERTIES_SUCCEPTIBILITY_Y_SCALE_MIN = 0.5e-1
 
-#Fit parameters
+#Flags to run plots for critical temperature estimation
+PLOT_CRITICAL_TEMPERATURES = False
+USE_GPR = True
+PLOT_CRITICAL_TEMPERATURES_FOR_LATTICE_SIZES = [5]
+
+#Fit parameters for the regression approach to Tc estimation
 FIT_INITIAL_GUESS = [-0.4, 1.2, 3]
 FIT_RANGE_LOWER_BOUND = 1.5
 FIT_IGNORED_POINTS_AT_UPPER_END = 4
